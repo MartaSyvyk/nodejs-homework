@@ -6,19 +6,22 @@ const {
   deleteById,
   update,
   updateStatusContact,
-} = require("../../controller/index");
+} = require("../../controller/contacts");
+const {joiContactSchema, joiContactFavoriteSchema} = require("../../service/schemas/contact")
+const {validate} = require("../../middlewares/validation")
+
 const router = express.Router();
 
 router.get("/", getAll);
 
 router.get("/:contactId", getById);
 
-router.post("/", create);
+router.post("/", validate(joiContactSchema), create);
 
 router.delete("/:contactId", deleteById);
 
-router.put("/:contactId", update);
+router.put("/:contactId", validate(joiContactSchema), update);
 
-router.patch("/:contactId/favorite", updateStatusContact);
+router.patch("/:contactId/favorite", validate(joiContactFavoriteSchema), updateStatusContact);
 
 module.exports = router;
