@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const registerJoiSchema = Joi.object({
   password: Joi.string().required(),
   email: Joi.string().email().required(),
-  subscription: Joi.string().valid("starter", "pro", "business").required(),
+  subscription: Joi.string().valid("starter", "pro", "business"),
 });
 
 const loginJoiSchema = Joi.object({
@@ -13,9 +13,10 @@ const loginJoiSchema = Joi.object({
   email: Joi.string().email().required(),
 });
 
-const SubscriptionUpdJoiSchema = Joi.object({
+const subscriptionUpdJoiSchema = Joi.object({
   subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
+
 
 const userSchema = Schema(
   {
@@ -37,6 +38,11 @@ const userSchema = Schema(
       type: String,
       default: null,
     },
+
+    avatarURL: {
+      type: String,
+      required: true,
+    },
   },
   { versionKey: false, timestamps: true }
 );
@@ -54,5 +60,5 @@ module.exports = {
   User,
   registerJoiSchema,
   loginJoiSchema,
-  SubscriptionUpdJoiSchema,
+  subscriptionUpdJoiSchema,
 };

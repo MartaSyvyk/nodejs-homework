@@ -11,13 +11,13 @@ const auth = async (req, res, next) => {
     const { authorization = "" } = req.headers;
     const [bearer, token] = authorization.split(" ");
     if (bearer !== "Bearer") {
-      const err = createError(401, "Not authorized Middleware 1");
+      const err = createError(401, "Not authorized ");
       throw err;
     }
     const { id } = jwt.verify(token, SECRET_KEY);
     const user = await User.findById(id);
     if (!user || !user.token) {
-      const err = createError(401, "Not authorized Middleware 2");
+      const err = createError(401, "Not authorized");
       throw err;
     }
     req.user = user;
