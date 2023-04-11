@@ -9,11 +9,15 @@ const createError = require("http-errors");
 const path = require("path");
 const Jimp = require("jimp");
 const { v4: uuidv4 } = require("uuid");
+const { sendEmail } = require("../utils/sendgrid.js");
 
 const avatarsDir = path.join(__dirname, "../", "public", "avatars");
 
 const register = async (req, res, next) => {
   const { email, password, subscription = "starter" } = req.body;
+  const verificationToken = uuidv4();
+
+  await sendEmail(email, verificationToken);
 
   try {
     const avatarURL = gravatar.url(email);
@@ -24,14 +28,19 @@ const register = async (req, res, next) => {
       throw err;
     }
 
-    const newUser = new User({ email, subscription, avatarURL });
+    const newUser = new User({
+      email,
+      subscription,
+      avatarURL,
+      verificationToken,
+    });
     newUser.setPassword(password);
     newUser.save();
 
     res.json({
       status: "Created",
       code: 201,
-      user: { email, subscription, avatarURL },
+      user: { email, subscription, avatarURL, verificationToken },
     });
   } catch (error) {
     next(error);
@@ -45,6 +54,12 @@ const login = async (req, res, next) => {
       const err = createError(401, "Email or password is wrong");
       throw err;
     }
+
+    if (!user.verify) {
+      const err = createError(401, "Account has to be verified");
+      throw err;
+    }
+
     const { subscription } = user;
 
     const payload = {
@@ -156,6 +171,50 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
+const verifyEmail = async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      const err = createError(404, "User not found");
+
+      throw err;
+    }
+    await User.findByIdAndUpdate(user._id, {
+      verify: true,
+      verificationToken: null,
+    });
+
+    res.json({
+      status: "success",
+      code: 200,
+      message: "Verification successfull",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendVerification = async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  const { verificationToken } = user;
+  try {
+    if (user.verify === true) {
+      const err = createError(400, "Verification has already been passed");
+      throw err;
+    }
+    await sendEmail(email, verificationToken);
+    res.json({
+      status: "success",
+      code: 200,
+      message: "Verification email was sent again",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -163,4 +222,6 @@ module.exports = {
   logout,
   updateSubscription,
   updateAvatar,
+  verifyEmail,
+  resendVerification,
 };
